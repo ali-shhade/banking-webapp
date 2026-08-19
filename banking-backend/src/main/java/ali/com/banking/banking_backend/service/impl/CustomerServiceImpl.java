@@ -2,17 +2,21 @@ package ali.com.banking.banking_backend.service.impl;
 
 import ali.com.banking.banking_backend.dto.CustomerRegistrationRequest;
 import ali.com.banking.banking_backend.dto.CustomerResponse;
+import ali.com.banking.banking_backend.dto.CustomerUpdateRequest;
 import ali.com.banking.banking_backend.dto.LoginRequest;
 import ali.com.banking.banking_backend.dto.LoginResponse;
 import ali.com.banking.banking_backend.config.JwtService;
 import ali.com.banking.banking_backend.entity.Customer;
+import ali.com.banking.banking_backend.exception.CustomerNotFoundException;
+import ali.com.banking.banking_backend.exception.DuplicateEmailException;
+import ali.com.banking.banking_backend.exception.DuplicateNationalIdException;
+import ali.com.banking.banking_backend.exception.DuplicatePhoneException;
+import ali.com.banking.banking_backend.exception.InvalidCredentialsException;
 import ali.com.banking.banking_backend.mapper.CustomerMapper;
 import ali.com.banking.banking_backend.repository.CustomerRepository;
 import ali.com.banking.banking_backend.service.CustomerService;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
 import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
@@ -36,32 +40,27 @@ public class CustomerServiceImpl implements CustomerService {
     @Transactional
 public CustomerResponse registerCustomer(CustomerRegistrationRequest request) {
 
+    if (request == null) {
+        throw new IllegalArgumentException("Registration request must not be null");
+    }
+
     String email = request.getEmail().trim().toLowerCase();
     String phone = request.getPhone().trim();
     String nationalId = request.getNationalId().trim();
 
 
     if (customerRepository.existsByEmail(email)) {
-        throw new ResponseStatusException(
-                HttpStatus.CONFLICT,
-                "Email already exists"
-        );
+        throw new DuplicateEmailException("Email already exists");
     }
 
 
     if (customerRepository.existsByPhone(phone)) {
-        throw new ResponseStatusException(
-                HttpStatus.CONFLICT,
-                "Phone number already exists"
-        );
+        throw new DuplicatePhoneException("Phone number already exists");
     }
 
 
     if (customerRepository.existsByNationalId(nationalId)) {
-        throw new ResponseStatusException(
-                HttpStatus.CONFLICT,
-                "National ID already exists"
-        );
+        throw new DuplicateNationalIdException("National ID already exists");
     }
     
     Customer customer = CustomerMapper.toEntity(request);
@@ -77,14 +76,12 @@ public CustomerResponse registerCustomer(CustomerRegistrationRequest request) {
 
 @Override
 public CustomerResponse getCustomerById(Long customerId) {
+    if (customerId == null) {
+        throw new IllegalArgumentException("Customer ID must not be null");
+    }
 
     Customer customer = customerRepository.findById(customerId)
-            .orElseThrow(() ->
-                    new ResponseStatusException(
-                            HttpStatus.NOT_FOUND,
-                            "Customer not found"
-                    )
-            );
+            .orElseThrow(() -> new CustomerNotFoundException("Customer not found"));
 
     return CustomerMapper.toResponse(customer);
 }
@@ -99,7 +96,7 @@ public CustomerResponse getCustomerById(Long customerId) {
 
     @Override
     @Transactional
-    public CustomerResponse updateCustomer(Long customerId, CustomerRegistrationRequest request) {
+    public CustomerResponse updateCustomer(Long customerId, CustomerUpdateRequest request) {
         // 1. Validate request is not null
         if (request == null) {
             throw new IllegalArgumentException("Registration request must not be null");
@@ -107,10 +104,7 @@ public CustomerResponse getCustomerById(Long customerId) {
 
         // 2. Find existing customer
         Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Customer not found"
-                ));
+                .orElseThrow(() -> new CustomerNotFoundException("Customer not found"));
 
         // 3-6. Normalize incoming data
         String email = request.getEmail().trim().toLowerCase();
@@ -119,26 +113,17 @@ public CustomerResponse getCustomerById(Long customerId) {
 
         // 7. Check email uniqueness (only if changed)
         if (!email.equals(customer.getEmail()) && customerRepository.existsByEmail(email)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Email already exists"
-            );
+            throw new DuplicateEmailException("Email already exists");
         }
 
         // 8. Check phone uniqueness (only if changed)
         if (!phone.equals(customer.getPhone()) && customerRepository.existsByPhone(phone)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "Phone number already exists"
-            );
+            throw new DuplicatePhoneException("Phone number already exists");
         }
 
         // 9. Check national ID uniqueness (only if changed)
         if (!nationalId.equals(customer.getNationalId()) && customerRepository.existsByNationalId(nationalId)) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "National ID already exists"
-            );
+            throw new DuplicateNationalIdException("National ID already exists");
         }
 
         // 10. Update customer fields
@@ -164,8 +149,16 @@ public CustomerResponse getCustomerById(Long customerId) {
     }
 
     @Override
+    @Transactional
     public void deleteCustomer(Long customerId) {
-        throw new UnsupportedOperationException("deleteCustomer is not implemented yet");
+        if (customerId == null) {
+            throw new IllegalArgumentException("Customer ID must not be null");
+        }
+
+        Customer customer = customerRepository.findById(customerId)
+                .orElseThrow(() -> new CustomerNotFoundException("Customer not found"));
+
+        customerRepository.delete(customer);
     }
 
     @Override
@@ -179,9 +172,7 @@ public CustomerResponse getCustomerById(Long customerId) {
 
         Customer customer = customerRepository.findByEmail(email)
             .filter(foundCustomer -> passwordEncoder.matches(password, foundCustomer.getPassword()))
-            .orElseThrow(() -> new ResponseStatusException(
-                HttpStatus.UNAUTHORIZED,
-                "Invalid email or password"));
+            .orElseThrow(() -> new InvalidCredentialsException("Invalid email or password"));
 
         return LoginResponse.builder()
             .token(jwtService.generateToken(customer.getEmail()))

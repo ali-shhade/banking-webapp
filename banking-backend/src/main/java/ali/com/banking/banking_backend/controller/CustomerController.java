@@ -2,6 +2,7 @@ package ali.com.banking.banking_backend.controller;
 
 import ali.com.banking.banking_backend.dto.CustomerRegistrationRequest;
 import ali.com.banking.banking_backend.dto.CustomerResponse;
+import ali.com.banking.banking_backend.dto.CustomerUpdateRequest;
 import ali.com.banking.banking_backend.dto.LoginRequest;
 import ali.com.banking.banking_backend.dto.LoginResponse;
 import ali.com.banking.banking_backend.service.CustomerService;
@@ -40,7 +41,7 @@ public class CustomerController {
     @PutMapping("/{customerId}")
     public ResponseEntity<CustomerResponse> updateCustomer(
             @PathVariable Long customerId,
-            @Valid @RequestBody CustomerRegistrationRequest request) {
+            @Valid @RequestBody CustomerUpdateRequest request) {
         CustomerResponse response = customerService.updateCustomer(customerId, request);
         return ResponseEntity.ok(response);
     }
