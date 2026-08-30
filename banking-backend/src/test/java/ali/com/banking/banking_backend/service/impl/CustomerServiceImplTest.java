@@ -3,10 +3,12 @@ package ali.com.banking.banking_backend.service.impl;
 import ali.com.banking.banking_backend.config.JwtService;
 import ali.com.banking.banking_backend.dto.CustomerRegistrationRequest;
 import ali.com.banking.banking_backend.dto.CustomerResponse;
+import ali.com.banking.banking_backend.dto.CustomerSummaryResponse;
 import ali.com.banking.banking_backend.dto.CustomerUpdateRequest;
 import ali.com.banking.banking_backend.dto.LoginRequest;
 import ali.com.banking.banking_backend.dto.LoginResponse;
 import ali.com.banking.banking_backend.entity.Customer;
+import ali.com.banking.banking_backend.exception.CustomerAccessDeniedException;
 import ali.com.banking.banking_backend.exception.CustomerNotFoundException;
 import ali.com.banking.banking_backend.exception.DuplicateEmailException;
 import ali.com.banking.banking_backend.exception.DuplicateNationalIdException;
@@ -350,7 +352,7 @@ class CustomerServiceImplTest {
 
         when(customerRepository.findById(7L)).thenReturn(Optional.of(customer));
 
-        CustomerResponse response = service.getCustomerById(7L);
+        CustomerResponse response = service.getCustomerById(7L, "alice@example.com");
 
         assertEquals(7L, response.getCustomerId());
         assertEquals("Alice", response.getFirstName());
@@ -372,7 +374,7 @@ class CustomerServiceImplTest {
 
         CustomerNotFoundException exception = assertThrows(
                 CustomerNotFoundException.class,
-                () -> service.getCustomerById(99L)
+                () -> service.getCustomerById(99L, "alice@example.com")
         );
 
         assertEquals("Customer not found", exception.getMessage());
@@ -384,7 +386,7 @@ class CustomerServiceImplTest {
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.getCustomerById(null)
+                () -> service.getCustomerById(null, "alice@example.com")
         );
 
         assertEquals("Customer ID must not be null", exception.getMessage());
@@ -421,43 +423,87 @@ class CustomerServiceImplTest {
                 .createdAt(LocalDateTime.of(2024, 2, 2, 11, 30))
                 .build();
 
-        when(customerRepository.findAll()).thenReturn(java.util.List.of(firstCustomer, secondCustomer));
+        when(customerRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(firstCustomer));
 
-        java.util.List<CustomerResponse> response = service.getAllCustomers();
+        java.util.List<CustomerSummaryResponse> response = service.getAllCustomers("alice@example.com");
 
-        assertEquals(2, response.size());
+        assertEquals(1, response.size());
         assertEquals("Alice", response.get(0).getFirstName());
         assertEquals("Smith", response.get(0).getLastName());
         assertEquals("alice@example.com", response.get(0).getEmail());
         assertEquals("123 Main St", response.get(0).getAddress());
-        assertEquals("Bob", response.get(1).getFirstName());
-        assertEquals("Jones", response.get(1).getLastName());
-        assertEquals("bob@example.com", response.get(1).getEmail());
-        assertEquals("456 Oak Ave", response.get(1).getAddress());
-        verify(customerRepository).findAll();
+        verify(customerRepository).findByEmail("alice@example.com");
     }
 
     @Test
     void getAllCustomers_shouldReturnEmptyListWhenNoCustomersExist() {
         CustomerServiceImpl service = new CustomerServiceImpl(customerRepository, passwordEncoder, jwtService);
 
-        when(customerRepository.findAll()).thenReturn(java.util.Collections.emptyList());
+        when(customerRepository.findByEmail("alice@example.com")).thenReturn(Optional.empty());
 
-        java.util.List<CustomerResponse> response = service.getAllCustomers();
+        CustomerAccessDeniedException exception = assertThrows(
+                CustomerAccessDeniedException.class,
+                () -> service.getAllCustomers("alice@example.com"));
 
-        assertEquals(0, response.size());
-        assertEquals(java.util.Collections.emptyList(), response);
-        verify(customerRepository).findAll();
+        assertEquals("Customer access denied", exception.getMessage());
+        verify(customerRepository).findByEmail("alice@example.com");
     }
 
     @Test
     void getAllCustomers_shouldCallRepositoryExactlyOnce() {
         CustomerServiceImpl service = new CustomerServiceImpl(customerRepository, passwordEncoder, jwtService);
-        when(customerRepository.findAll()).thenReturn(java.util.Collections.emptyList());
+        when(customerRepository.findByEmail("alice@example.com")).thenReturn(Optional.of(Customer.builder()
+                .customerId(1L)
+                .email("alice@example.com")
+                .build()));
 
-        service.getAllCustomers();
+        service.getAllCustomers("alice@example.com");
 
-        verify(customerRepository).findAll();
+        verify(customerRepository).findByEmail("alice@example.com");
+    }
+
+    @Test
+    void getCustomerById_shouldRejectAnotherCustomersRecord() {
+        CustomerServiceImpl service = new CustomerServiceImpl(customerRepository, passwordEncoder, jwtService);
+        Customer customer = Customer.builder()
+                .customerId(2L)
+                .email("bob@example.com")
+                .build();
+        when(customerRepository.findById(2L)).thenReturn(Optional.of(customer));
+
+        assertThrows(
+                CustomerAccessDeniedException.class,
+                () -> service.getCustomerById(2L, "alice@example.com"));
+    }
+
+    @Test
+    void updateCustomer_shouldRejectAnotherCustomersRecord() {
+        CustomerServiceImpl service = new CustomerServiceImpl(customerRepository, passwordEncoder, jwtService);
+        Customer customer = Customer.builder()
+                .customerId(2L)
+                .email("bob@example.com")
+                .build();
+        when(customerRepository.findById(2L)).thenReturn(Optional.of(customer));
+
+        assertThrows(
+                CustomerAccessDeniedException.class,
+                () -> service.updateCustomer(2L, validUpdateRequest(), "alice@example.com"));
+        verify(customerRepository, never()).save(any(Customer.class));
+    }
+
+    @Test
+    void deleteCustomer_shouldRejectAnotherCustomersRecord() {
+        CustomerServiceImpl service = new CustomerServiceImpl(customerRepository, passwordEncoder, jwtService);
+        Customer customer = Customer.builder()
+                .customerId(2L)
+                .email("bob@example.com")
+                .build();
+        when(customerRepository.findById(2L)).thenReturn(Optional.of(customer));
+
+        assertThrows(
+                CustomerAccessDeniedException.class,
+                () -> service.deleteCustomer(2L, "alice@example.com"));
+        verify(customerRepository, never()).delete(any(Customer.class));
     }
 
     @Test
@@ -490,7 +536,7 @@ class CustomerServiceImplTest {
         when(customerRepository.findById(1L)).thenReturn(Optional.of(existingCustomer));
         when(customerRepository.save(any(Customer.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        CustomerResponse response = service.updateCustomer(1L, request);
+        CustomerResponse response = service.updateCustomer(1L, request, "alice@example.com");
 
         assertEquals("Updated", response.getFirstName());
         assertEquals("User", response.getLastName());
@@ -534,7 +580,7 @@ class CustomerServiceImplTest {
         when(passwordEncoder.encode("NewPassword123")).thenReturn("new-encoded-password");
         when(customerRepository.save(any(Customer.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.updateCustomer(2L, request);
+        service.updateCustomer(2L, request, "bob@example.com");
 
         ArgumentCaptor<Customer> customerCaptor = ArgumentCaptor.forClass(Customer.class);
         verify(customerRepository).save(customerCaptor.capture());
@@ -554,7 +600,7 @@ class CustomerServiceImplTest {
 
         CustomerNotFoundException exception = assertThrows(
                 CustomerNotFoundException.class,
-                () -> service.updateCustomer(99L, request)
+                () -> service.updateCustomer(99L, request, "alice@example.com")
         );
 
         assertEquals("Customer not found", exception.getMessage());
@@ -592,7 +638,7 @@ class CustomerServiceImplTest {
 
         DuplicateEmailException exception = assertThrows(
                 DuplicateEmailException.class,
-                () -> service.updateCustomer(1L, request)
+                () -> service.updateCustomer(1L, request, "alice@example.com")
         );
 
         assertEquals("Email already exists", exception.getMessage());
@@ -630,7 +676,7 @@ class CustomerServiceImplTest {
 
         DuplicatePhoneException exception = assertThrows(
                 DuplicatePhoneException.class,
-                () -> service.updateCustomer(1L, request)
+                () -> service.updateCustomer(1L, request, "alice@example.com")
         );
 
         assertEquals("Phone number already exists", exception.getMessage());
@@ -668,7 +714,7 @@ class CustomerServiceImplTest {
 
         DuplicateNationalIdException exception = assertThrows(
                 DuplicateNationalIdException.class,
-                () -> service.updateCustomer(1L, request)
+                () -> service.updateCustomer(1L, request, "alice@example.com")
         );
 
         assertEquals("National ID already exists", exception.getMessage());
@@ -704,7 +750,7 @@ class CustomerServiceImplTest {
         when(customerRepository.findById(1L)).thenReturn(Optional.of(existingCustomer));
         when(customerRepository.save(any(Customer.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.updateCustomer(1L, request);
+        service.updateCustomer(1L, request, "alice@example.com");
 
         verify(customerRepository, never()).existsByEmail("alice@example.com");
         verify(customerRepository).save(any(Customer.class));
@@ -740,7 +786,7 @@ class CustomerServiceImplTest {
         when(customerRepository.existsByEmail("new@example.com")).thenReturn(false);
         when(customerRepository.save(any(Customer.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.updateCustomer(1L, request);
+        service.updateCustomer(1L, request, "alice@example.com");
 
         verify(customerRepository, never()).existsByPhone("+1234567890");
         verify(customerRepository).save(any(Customer.class));
@@ -777,7 +823,7 @@ class CustomerServiceImplTest {
         when(customerRepository.existsByPhone("+1111111111")).thenReturn(false);
         when(customerRepository.save(any(Customer.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        service.updateCustomer(1L, request);
+        service.updateCustomer(1L, request, "alice@example.com");
 
         verify(customerRepository, never()).existsByNationalId("1234567890");
         verify(customerRepository).save(any(Customer.class));
@@ -789,7 +835,7 @@ class CustomerServiceImplTest {
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.updateCustomer(1L, null)
+                () -> service.updateCustomer(1L, null, "alice@example.com")
         );
 
         assertEquals("Registration request must not be null", exception.getMessage());
@@ -813,7 +859,7 @@ class CustomerServiceImplTest {
 
         when(customerRepository.findById(1L)).thenReturn(Optional.of(customer));
 
-        service.deleteCustomer(1L);
+        service.deleteCustomer(1L, "alice@example.com");
 
         verify(customerRepository).delete(customer);
     }
@@ -826,7 +872,7 @@ class CustomerServiceImplTest {
 
         CustomerNotFoundException exception = assertThrows(
                 CustomerNotFoundException.class,
-                () -> service.deleteCustomer(99L)
+                () -> service.deleteCustomer(99L, "alice@example.com")
         );
 
         assertEquals("Customer not found", exception.getMessage());
@@ -838,7 +884,7 @@ class CustomerServiceImplTest {
 
         IllegalArgumentException exception = assertThrows(
                 IllegalArgumentException.class,
-                () -> service.deleteCustomer(null)
+                () -> service.deleteCustomer(null, "alice@example.com")
         );
 
         assertEquals("Customer ID must not be null", exception.getMessage());

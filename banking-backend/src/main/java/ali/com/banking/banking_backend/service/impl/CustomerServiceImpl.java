@@ -2,11 +2,13 @@ package ali.com.banking.banking_backend.service.impl;
 
 import ali.com.banking.banking_backend.dto.CustomerRegistrationRequest;
 import ali.com.banking.banking_backend.dto.CustomerResponse;
+import ali.com.banking.banking_backend.dto.CustomerSummaryResponse;
 import ali.com.banking.banking_backend.dto.CustomerUpdateRequest;
 import ali.com.banking.banking_backend.dto.LoginRequest;
 import ali.com.banking.banking_backend.dto.LoginResponse;
 import ali.com.banking.banking_backend.config.JwtService;
 import ali.com.banking.banking_backend.entity.Customer;
+import ali.com.banking.banking_backend.exception.CustomerAccessDeniedException;
 import ali.com.banking.banking_backend.exception.CustomerNotFoundException;
 import ali.com.banking.banking_backend.exception.DuplicateEmailException;
 import ali.com.banking.banking_backend.exception.DuplicateNationalIdException;
@@ -75,28 +77,30 @@ public CustomerResponse registerCustomer(CustomerRegistrationRequest request) {
 }
 
 @Override
-public CustomerResponse getCustomerById(Long customerId) {
+    public CustomerResponse getCustomerById(Long customerId, String authenticatedEmail) {
     if (customerId == null) {
         throw new IllegalArgumentException("Customer ID must not be null");
     }
 
-    Customer customer = customerRepository.findById(customerId)
+        Customer customer = customerRepository.findById(customerId)
             .orElseThrow(() -> new CustomerNotFoundException("Customer not found"));
+        ensureOwner(customer, authenticatedEmail);
 
     return CustomerMapper.toResponse(customer);
 }
 
     @Override
-    public List<CustomerResponse> getAllCustomers() {
-        List<Customer> customers = customerRepository.findAll();
-        return customers.stream()
-                .map(CustomerMapper::toResponse)
-                .toList();
+    public List<CustomerSummaryResponse> getAllCustomers(String authenticatedEmail) {
+        Customer customer = findAuthenticatedCustomer(authenticatedEmail);
+        return List.of(CustomerMapper.toSummaryResponse(customer));
     }
 
     @Override
     @Transactional
-    public CustomerResponse updateCustomer(Long customerId, CustomerUpdateRequest request) {
+        public CustomerResponse updateCustomer(
+            Long customerId,
+            CustomerUpdateRequest request,
+            String authenticatedEmail) {
         // 1. Validate request is not null
         if (request == null) {
             throw new IllegalArgumentException("Registration request must not be null");
@@ -104,7 +108,8 @@ public CustomerResponse getCustomerById(Long customerId) {
 
         // 2. Find existing customer
         Customer customer = customerRepository.findById(customerId)
-                .orElseThrow(() -> new CustomerNotFoundException("Customer not found"));
+            .orElseThrow(() -> new CustomerNotFoundException("Customer not found"));
+        ensureOwner(customer, authenticatedEmail);
 
         // 3-6. Normalize incoming data
         String email = request.getEmail().trim().toLowerCase();
@@ -150,15 +155,31 @@ public CustomerResponse getCustomerById(Long customerId) {
 
     @Override
     @Transactional
-    public void deleteCustomer(Long customerId) {
+    public void deleteCustomer(Long customerId, String authenticatedEmail) {
         if (customerId == null) {
             throw new IllegalArgumentException("Customer ID must not be null");
         }
 
         Customer customer = customerRepository.findById(customerId)
                 .orElseThrow(() -> new CustomerNotFoundException("Customer not found"));
+        ensureOwner(customer, authenticatedEmail);
 
         customerRepository.delete(customer);
+    }
+
+    private Customer findAuthenticatedCustomer(String authenticatedEmail) {
+        if (authenticatedEmail == null || authenticatedEmail.isBlank()) {
+            throw new CustomerAccessDeniedException("Customer access denied");
+        }
+
+        return customerRepository.findByEmail(authenticatedEmail)
+                .orElseThrow(() -> new CustomerAccessDeniedException("Customer access denied"));
+    }
+
+    private void ensureOwner(Customer customer, String authenticatedEmail) {
+        if (authenticatedEmail == null || !authenticatedEmail.equalsIgnoreCase(customer.getEmail())) {
+            throw new CustomerAccessDeniedException("Customer access denied");
+        }
     }
 
     @Override

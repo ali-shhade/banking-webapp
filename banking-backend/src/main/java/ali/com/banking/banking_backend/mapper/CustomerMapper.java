@@ -2,6 +2,7 @@ package ali.com.banking.banking_backend.mapper;
 
 import ali.com.banking.banking_backend.dto.CustomerRegistrationRequest;
 import ali.com.banking.banking_backend.dto.CustomerResponse;
+import ali.com.banking.banking_backend.dto.CustomerSummaryResponse;
 import ali.com.banking.banking_backend.entity.Customer;
 
 public class CustomerMapper {
@@ -37,6 +38,23 @@ public class CustomerMapper {
                 .address(customer.getAddress())
                 .dateOfBirth(customer.getDateOfBirth())
                 .nationalId(customer.getNationalId())
+                .createdAt(customer.getCreatedAt())
+                .build();
+    }
+
+    public static CustomerSummaryResponse toSummaryResponse(Customer customer) {
+        if (customer == null) {
+            return null;
+        }
+
+        return CustomerSummaryResponse.builder()
+                .customerId(customer.getCustomerId())
+                .firstName(customer.getFirstName())
+                .lastName(customer.getLastName())
+                .email(customer.getEmail())
+                .phone(customer.getPhone())
+                .address(customer.getAddress())
+                .dateOfBirth(customer.getDateOfBirth())
                 .createdAt(customer.getCreatedAt())
                 .build();
     }

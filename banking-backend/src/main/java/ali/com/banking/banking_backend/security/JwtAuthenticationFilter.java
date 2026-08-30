@@ -10,6 +10,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
@@ -19,6 +21,7 @@ import java.util.Collections;
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private static final String BEARER_PREFIX = "Bearer ";
+    private static final Logger logger = LoggerFactory.getLogger(JwtAuthenticationFilter.class);
 
     private final JwtService jwtService;
     private final CustomerRepository customerRepository;
@@ -47,39 +50,38 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        String token = authorizationHeader.substring(BEARER_PREFIX.length());
+        String token = authorizationHeader.substring(BEARER_PREFIX.length()).trim();
 
         try {
-            String email = jwtService.extractUsername(token);
+    String email = jwtService.extractUsername(token);
+    if (email != null &&
+            SecurityContextHolder.getContext().getAuthentication() == null) {
 
-            if (email != null &&
-                    SecurityContextHolder.getContext().getAuthentication() == null) {
+        customerRepository.findByEmail(email).ifPresent(customer -> {
 
-                customerRepository.findByEmail(email).ifPresent(customer -> {
+            if (jwtService.isTokenValid(token, customer.getEmail())) {
 
-                    if (jwtService.isTokenValid(token, customer.getEmail())) {
-
-                        UsernamePasswordAuthenticationToken authentication =
-                                new UsernamePasswordAuthenticationToken(
-                                        customer.getEmail(),
-                                        null,
-                                        Collections.emptyList()
-                                );
-
-                        authentication.setDetails(
-                                new WebAuthenticationDetailsSource()
-                                        .buildDetails(request)
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                customer.getEmail(),
+                                null,
+                                Collections.emptyList()
                         );
 
-                        SecurityContextHolder.getContext()
-                                .setAuthentication(authentication);
-                    }
-                });
-            }
+                authentication.setDetails(
+                        new WebAuthenticationDetailsSource()
+                                .buildDetails(request)
+                );
 
-        } catch (RuntimeException exception) {
-            // Invalid JWT → don't authenticate
-        }
+                SecurityContextHolder.getContext()
+                        .setAuthentication(authentication);
+            }
+        });
+    }
+
+} catch (RuntimeException exception) {
+    logger.debug("JWT authentication failed");
+}
 
         filterChain.doFilter(request, response);
     }

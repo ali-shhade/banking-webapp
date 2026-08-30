@@ -34,6 +34,9 @@ public class CustomerUpdateRequest {
     private String phone;
 
     @Size(min = 8, max = 64, message = "Password must be between 8 and 64 characters")
+        @Pattern(
+            regexp = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[^A-Za-z0-9\\s]).+$",
+            message = "Password must contain uppercase, lowercase, digit, and special character")
     private String password;
 
     @NotBlank(message = "Address is required")

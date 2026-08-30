@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -58,6 +60,14 @@ class GlobalExceptionHandlerTest {
     }
 
     @Test
+    void handleCustomerAccessDenied_returnsForbiddenWithMessage() {
+        assertExceptionResponse(
+                handler.handleCustomerAccessDenied(new CustomerAccessDeniedException("Customer access denied")),
+                HttpStatus.FORBIDDEN,
+                "Customer access denied");
+    }
+
+    @Test
     void handleMethodArgumentNotValid_returnsBadRequestWithValidationMessage() throws NoSuchMethodException {
         Method method = ValidationTarget.class.getDeclaredMethod("submit", String.class);
         MethodParameter parameter = new MethodParameter(method, 0);
@@ -70,6 +80,24 @@ class GlobalExceptionHandlerTest {
                 handler.handleMethodArgumentNotValid(exception),
                 HttpStatus.BAD_REQUEST,
                 "Name is required");
+    }
+
+    @Test
+    void handleMethodArgumentTypeMismatch_returnsBadRequestWithoutInternalDetails() {
+        MethodArgumentTypeMismatchException exception = new MethodArgumentTypeMismatchException(
+                "abc", Long.class, "customerId", null, new NumberFormatException("internal details"));
+
+        ResponseEntity<Map<String, Object>> response = handler.handleMethodArgumentTypeMismatch(exception);
+
+        assertExceptionResponse(response, HttpStatus.BAD_REQUEST, "Customer ID must be a valid number");
+    }
+
+    @Test
+    void handleDataIntegrityViolation_returnsConflictWithoutDatabaseDetails() {
+        ResponseEntity<Map<String, Object>> response = handler.handleDataIntegrityViolation(
+                new DataIntegrityViolationException("SQL table and constraint details"));
+
+        assertExceptionResponse(response, HttpStatus.CONFLICT, "Customer details already exist");
     }
 
     private void assertExceptionResponse(ResponseEntity<Map<String, Object>> response,
