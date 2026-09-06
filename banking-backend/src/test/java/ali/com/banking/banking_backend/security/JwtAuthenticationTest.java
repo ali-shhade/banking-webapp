@@ -1,10 +1,11 @@
 package ali.com.banking.banking_backend.security;
 
 import ali.com.banking.banking_backend.config.JwtService;
-import ali.com.banking.banking_backend.dto.CustomerResponse;
+import ali.com.banking.banking_backend.customer.dto.CustomerResponse;
+import ali.com.banking.banking_backend.customer.entity.Customer;
+import ali.com.banking.banking_backend.customer.repository.CustomerRepository;
+import ali.com.banking.banking_backend.customer.service.CustomerService;
 import ali.com.banking.banking_backend.exception.CustomerAccessDeniedException;
-import ali.com.banking.banking_backend.repository.CustomerRepository;
-import ali.com.banking.banking_backend.service.CustomerService;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
@@ -114,8 +115,8 @@ class JwtAuthenticationTest {
                 .compact();
     }
 
-    private ali.com.banking.banking_backend.entity.Customer customer(String email) {
-        return ali.com.banking.banking_backend.entity.Customer.builder()
+    private Customer customer(String email) {
+        return Customer.builder()
                 .customerId(email.equals(ALICE_EMAIL) ? 1L : 2L)
                 .email(email)
                 .build();
