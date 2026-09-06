@@ -1,17 +1,18 @@
 package ali.com.banking.banking_backend.controller;
 
-import ali.com.banking.banking_backend.dto.CustomerRegistrationRequest;
-import ali.com.banking.banking_backend.dto.CustomerResponse;
-import ali.com.banking.banking_backend.dto.CustomerSummaryResponse;
-import ali.com.banking.banking_backend.dto.CustomerUpdateRequest;
-import ali.com.banking.banking_backend.dto.LoginRequest;
-import ali.com.banking.banking_backend.dto.LoginResponse;
+import ali.com.banking.banking_backend.customer.controller.CustomerController;
+import ali.com.banking.banking_backend.customer.dto.CustomerRegistrationRequest;
+import ali.com.banking.banking_backend.customer.dto.CustomerResponse;
+import ali.com.banking.banking_backend.customer.dto.CustomerSummaryResponse;
+import ali.com.banking.banking_backend.customer.dto.CustomerUpdateRequest;
+import ali.com.banking.banking_backend.customer.dto.LoginRequest;
+import ali.com.banking.banking_backend.customer.dto.LoginResponse;
+import ali.com.banking.banking_backend.customer.service.CustomerService;
 import ali.com.banking.banking_backend.exception.CustomerAccessDeniedException;
 import ali.com.banking.banking_backend.exception.CustomerNotFoundException;
 import ali.com.banking.banking_backend.exception.DuplicateEmailException;
 import ali.com.banking.banking_backend.exception.InvalidCredentialsException;
 import ali.com.banking.banking_backend.security.JwtAuthenticationFilter;
-import ali.com.banking.banking_backend.service.CustomerService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

@@ -1,13 +1,14 @@
 package ali.com.banking.banking_backend.controller;
 
-import ali.com.banking.banking_backend.dto.AccountCreateRequest;
-import ali.com.banking.banking_backend.dto.AccountResponse;
-import ali.com.banking.banking_backend.entity.AccountStatus;
-import ali.com.banking.banking_backend.entity.AccountType;
+import ali.com.banking.banking_backend.account.controller.AccountController;
+import ali.com.banking.banking_backend.account.dto.AccountCreateRequest;
+import ali.com.banking.banking_backend.account.dto.AccountResponse;
+import ali.com.banking.banking_backend.account.entity.AccountStatus;
+import ali.com.banking.banking_backend.account.entity.AccountType;
+import ali.com.banking.banking_backend.account.service.AccountService;
 import ali.com.banking.banking_backend.exception.AccountNotFoundException;
 import ali.com.banking.banking_backend.exception.CustomerAccessDeniedException;
 import ali.com.banking.banking_backend.security.JwtAuthenticationFilter;
-import ali.com.banking.banking_backend.service.AccountService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

@@ -1,12 +1,13 @@
 package ali.com.banking.banking_backend.service.impl;
 
-import ali.com.banking.banking_backend.entity.Account;
-import ali.com.banking.banking_backend.entity.AccountStatus;
-import ali.com.banking.banking_backend.entity.Customer;
+import ali.com.banking.banking_backend.account.entity.Account;
+import ali.com.banking.banking_backend.account.entity.AccountStatus;
+import ali.com.banking.banking_backend.account.repository.AccountRepository;
+import ali.com.banking.banking_backend.account.service.impl.AccountServiceImpl;
+import ali.com.banking.banking_backend.customer.entity.Customer;
+import ali.com.banking.banking_backend.customer.repository.CustomerRepository;
 import ali.com.banking.banking_backend.exception.AccountNotFoundException;
 import ali.com.banking.banking_backend.exception.CustomerAccessDeniedException;
-import ali.com.banking.banking_backend.repository.AccountRepository;
-import ali.com.banking.banking_backend.repository.CustomerRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

@@ -1,7 +1,7 @@
 package ali.com.banking.banking_backend.security;
 
 import ali.com.banking.banking_backend.config.JwtService;
-import ali.com.banking.banking_backend.repository.CustomerRepository;
+import ali.com.banking.banking_backend.customer.repository.CustomerRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
