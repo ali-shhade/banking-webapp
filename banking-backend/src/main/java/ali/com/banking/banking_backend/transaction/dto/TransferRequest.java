@@ -14,7 +14,11 @@ import java.math.BigDecimal;
 @Builder
 @AllArgsConstructor
 @NoArgsConstructor
-public class DepositRequest {
+public class TransferRequest {
+
+    @NotNull(message = "Destination account ID is required")
+    @Positive(message = "Destination account ID must be positive")
+    private Long destinationAccountId;
 
     @NotNull(message = "Amount is required")
     @Positive(message = "Amount must be greater than zero")

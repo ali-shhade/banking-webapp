@@ -34,7 +34,8 @@ class AccountServiceImplTest {
     @Test
     void closeAccount_whenActive_changesStatusToClosedAndSaves() {
         Account account = accountWithStatus(AccountStatus.ACTIVE);
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        account.setBalance(java.math.BigDecimal.ZERO);
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(account));
 
         service().closeAccount(1L, "alice@example.com");
 
@@ -45,7 +46,8 @@ class AccountServiceImplTest {
     @Test
     void closeAccount_whenSuspended_changesStatusToClosedAndSaves() {
         Account account = accountWithStatus(AccountStatus.SUSPENDED);
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        account.setBalance(java.math.BigDecimal.ZERO);
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(account));
 
         service().closeAccount(1L, "alice@example.com");
 
@@ -56,7 +58,7 @@ class AccountServiceImplTest {
     @Test
     void closeAccount_whenClosed_throwsIllegalStateExceptionWithoutSaving() {
         Account account = accountWithStatus(AccountStatus.CLOSED);
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(account));
 
         assertThrows(IllegalStateException.class,
                 () -> service().closeAccount(1L, "alice@example.com"));
@@ -65,8 +67,21 @@ class AccountServiceImplTest {
     }
 
     @Test
+    void closeAccount_whenBalanceIsNonZero_throwsIllegalArgumentExceptionWithoutSaving() {
+        Account account = accountWithStatus(AccountStatus.ACTIVE);
+        account.setBalance(new java.math.BigDecimal("10.00"));
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(account));
+
+        assertThrows(IllegalArgumentException.class,
+                () -> service().closeAccount(1L, "alice@example.com"));
+
+        assertEquals(AccountStatus.ACTIVE, account.getStatus());
+        verify(accountRepository, never()).save(any(Account.class));
+    }
+
+    @Test
     void closeAccount_whenAccountDoesNotExist_throwsAccountNotFoundExceptionWithoutSaving() {
-        when(accountRepository.findById(99L)).thenReturn(Optional.empty());
+        when(accountRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
         assertThrows(AccountNotFoundException.class,
                 () -> service().closeAccount(99L, "alice@example.com"));
@@ -78,7 +93,8 @@ class AccountServiceImplTest {
     void closeAccount_whenAnotherCustomerOwnsAccount_throwsAccessDeniedWithoutSaving() {
         Account account = accountWithStatus(AccountStatus.ACTIVE);
         account.setCustomer(customer("bob@example.com"));
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        account.setBalance(java.math.BigDecimal.ZERO);
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(account));
 
         assertThrows(CustomerAccessDeniedException.class,
                 () -> service().closeAccount(1L, "alice@example.com"));
@@ -89,7 +105,7 @@ class AccountServiceImplTest {
     @Test
     void suspendAccount_whenActive_changesStatusToSuspendedAndSaves() {
         Account account = accountWithStatus(AccountStatus.ACTIVE);
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(account));
 
         service().suspendAccount(1L, "alice@example.com");
 
@@ -100,7 +116,7 @@ class AccountServiceImplTest {
     @Test
     void suspendAccount_whenSuspended_throwsIllegalStateExceptionWithoutSaving() {
         Account account = accountWithStatus(AccountStatus.SUSPENDED);
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(account));
 
         assertThrows(IllegalStateException.class,
                 () -> service().suspendAccount(1L, "alice@example.com"));
@@ -111,7 +127,7 @@ class AccountServiceImplTest {
     @Test
     void suspendAccount_whenClosed_throwsIllegalStateExceptionWithoutSaving() {
         Account account = accountWithStatus(AccountStatus.CLOSED);
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(account));
 
         assertThrows(IllegalStateException.class,
                 () -> service().suspendAccount(1L, "alice@example.com"));
@@ -121,7 +137,7 @@ class AccountServiceImplTest {
 
     @Test
     void suspendAccount_whenAccountDoesNotExist_throwsAccountNotFoundExceptionWithoutSaving() {
-        when(accountRepository.findById(99L)).thenReturn(Optional.empty());
+        when(accountRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
         assertThrows(AccountNotFoundException.class,
                 () -> service().suspendAccount(99L, "alice@example.com"));
@@ -133,7 +149,7 @@ class AccountServiceImplTest {
     void suspendAccount_whenAnotherCustomerOwnsAccount_throwsAccessDeniedWithoutSaving() {
         Account account = accountWithStatus(AccountStatus.ACTIVE);
         account.setCustomer(customer("bob@example.com"));
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(account));
 
         assertThrows(CustomerAccessDeniedException.class,
                 () -> service().suspendAccount(1L, "alice@example.com"));
@@ -144,7 +160,7 @@ class AccountServiceImplTest {
     @Test
     void activateAccount_whenSuspended_changesStatusToActiveAndSaves() {
         Account account = accountWithStatus(AccountStatus.SUSPENDED);
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(account));
 
         service().activateAccount(1L, "alice@example.com");
 
@@ -155,7 +171,7 @@ class AccountServiceImplTest {
     @Test
     void activateAccount_whenActive_throwsIllegalStateExceptionWithoutSaving() {
         Account account = accountWithStatus(AccountStatus.ACTIVE);
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(account));
 
         assertThrows(IllegalStateException.class,
                 () -> service().activateAccount(1L, "alice@example.com"));
@@ -166,7 +182,7 @@ class AccountServiceImplTest {
     @Test
     void activateAccount_whenClosed_throwsIllegalStateExceptionWithoutSaving() {
         Account account = accountWithStatus(AccountStatus.CLOSED);
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(account));
 
         assertThrows(IllegalStateException.class,
                 () -> service().activateAccount(1L, "alice@example.com"));
@@ -176,7 +192,7 @@ class AccountServiceImplTest {
 
     @Test
     void activateAccount_whenAccountDoesNotExist_throwsAccountNotFoundExceptionWithoutSaving() {
-        when(accountRepository.findById(99L)).thenReturn(Optional.empty());
+        when(accountRepository.findByIdForUpdate(99L)).thenReturn(Optional.empty());
 
         assertThrows(AccountNotFoundException.class,
                 () -> service().activateAccount(99L, "alice@example.com"));
@@ -188,7 +204,7 @@ class AccountServiceImplTest {
     void activateAccount_whenAnotherCustomerOwnsAccount_throwsAccessDeniedWithoutSaving() {
         Account account = accountWithStatus(AccountStatus.SUSPENDED);
         account.setCustomer(customer("bob@example.com"));
-        when(accountRepository.findById(1L)).thenReturn(Optional.of(account));
+        when(accountRepository.findByIdForUpdate(1L)).thenReturn(Optional.of(account));
 
         assertThrows(CustomerAccessDeniedException.class,
                 () -> service().activateAccount(1L, "alice@example.com"));

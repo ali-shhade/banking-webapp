@@ -1,10 +1,9 @@
 package ali.com.banking.banking_backend;
 
+import ali.com.banking.banking_backend.integration.BaseIntegrationTest;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
-class BankingBackendApplicationTests {
+class BankingBackendApplicationTests extends BaseIntegrationTest {
 
 	@Test
 	void contextLoads() {

@@ -37,7 +37,6 @@ public class CustomerMapper {
                 .phone(customer.getPhone())
                 .address(customer.getAddress())
                 .dateOfBirth(customer.getDateOfBirth())
-                .nationalId(customer.getNationalId())
                 .createdAt(customer.getCreatedAt())
                 .build();
     }

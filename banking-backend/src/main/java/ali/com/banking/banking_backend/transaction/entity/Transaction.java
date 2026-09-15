@@ -56,6 +56,9 @@ public class Transaction {
     @Column(name = "reference", nullable = false, unique = true)
     private String reference;
 
+    @Column(name = "transfer_reference", length = 36)
+    private String transferReference;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 

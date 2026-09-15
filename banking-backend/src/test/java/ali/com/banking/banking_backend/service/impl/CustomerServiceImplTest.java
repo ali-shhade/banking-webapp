@@ -108,7 +108,6 @@ class CustomerServiceImplTest {
         assertEquals("+1234567890", response.getPhone());
         assertEquals("123 Main St", response.getAddress());
         assertEquals(LocalDate.of(1990, 1, 1), response.getDateOfBirth());
-        assertEquals("1234567890", response.getNationalId());
 
         verify(passwordEncoder).encode("StrongPass123");
         verify(customerRepository).save(any(Customer.class));
@@ -362,7 +361,6 @@ class CustomerServiceImplTest {
         assertEquals("+1234567890", response.getPhone());
         assertEquals("123 Main St", response.getAddress());
         assertEquals(LocalDate.of(1990, 1, 1), response.getDateOfBirth());
-        assertEquals("1234567890", response.getNationalId());
         assertEquals(customer.getCreatedAt(), response.getCreatedAt());
         verify(customerRepository).findById(7L);
     }
@@ -545,7 +543,6 @@ class CustomerServiceImplTest {
         assertEquals(LocalDate.of(1991, 2, 3), response.getDateOfBirth());
         assertEquals("alice@example.com", response.getEmail());
         assertEquals("+1234567890", response.getPhone());
-        assertEquals("1234567890", response.getNationalId());
         verify(passwordEncoder, never()).encode(any());
         verify(customerRepository).save(any(Customer.class));
     }

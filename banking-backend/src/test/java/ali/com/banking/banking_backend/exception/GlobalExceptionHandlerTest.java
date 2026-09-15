@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -89,7 +90,7 @@ class GlobalExceptionHandlerTest {
 
         ResponseEntity<Map<String, Object>> response = handler.handleMethodArgumentTypeMismatch(exception);
 
-        assertExceptionResponse(response, HttpStatus.BAD_REQUEST, "Customer ID must be a valid number");
+        assertExceptionResponse(response, HttpStatus.BAD_REQUEST, "ID must be a valid number");
     }
 
     @Test
@@ -97,7 +98,23 @@ class GlobalExceptionHandlerTest {
         ResponseEntity<Map<String, Object>> response = handler.handleDataIntegrityViolation(
                 new DataIntegrityViolationException("SQL table and constraint details"));
 
-        assertExceptionResponse(response, HttpStatus.CONFLICT, "Customer details already exist");
+        assertExceptionResponse(response, HttpStatus.CONFLICT, "Database constraint violation");
+    }
+
+    @Test
+    void handleUnexpectedException_returnsSafeInternalServerError() {
+        ResponseEntity<Map<String, Object>> response = handler.handleUnexpectedException(
+                new RuntimeException("internal details"));
+
+        assertExceptionResponse(response, HttpStatus.INTERNAL_SERVER_ERROR, "Internal server error");
+    }
+
+    @Test
+    void handleHttpMessageNotReadable_returnsBadRequestWithoutParserDetails() {
+        ResponseEntity<Map<String, Object>> response = handler.handleHttpMessageNotReadable(
+            new HttpMessageNotReadableException("parser details", new RuntimeException("parser details")));
+
+        assertExceptionResponse(response, HttpStatus.BAD_REQUEST, "Malformed JSON request");
     }
 
     private void assertExceptionResponse(ResponseEntity<Map<String, Object>> response,

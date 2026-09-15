@@ -6,6 +6,7 @@ import ali.com.banking.banking_backend.customer.entity.Customer;
 import ali.com.banking.banking_backend.customer.repository.CustomerRepository;
 import ali.com.banking.banking_backend.customer.service.CustomerService;
 import ali.com.banking.banking_backend.exception.CustomerAccessDeniedException;
+import ali.com.banking.banking_backend.integration.BaseIntegrationTest;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.junit.jupiter.api.Test;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -31,11 +33,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 @TestPropertySource(properties = {
         "jwt.secret=test-secret-key-that-is-long-enough-for-hmac-sha",
         "jwt.expiration=86400000"
 })
-class JwtAuthenticationTest {
+class JwtAuthenticationTest extends BaseIntegrationTest {
 
     private static final String ALICE_EMAIL = "alice@example.com";
     private static final String BOB_EMAIL = "bob@example.com";
@@ -131,7 +134,6 @@ class JwtAuthenticationTest {
                 .phone("+1234567890")
                 .address("Test address")
                 .dateOfBirth(LocalDate.of(1990, 1, 1))
-                .nationalId("1234567890")
                 .build();
     }
 }

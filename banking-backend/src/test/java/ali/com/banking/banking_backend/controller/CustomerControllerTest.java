@@ -167,7 +167,7 @@ class CustomerControllerTest {
                 mockMvc.perform(get("/api/customers/{customerId}", "abc")
                                                 .principal(new UsernamePasswordAuthenticationToken("alice@example.com", null)))
                                 .andExpect(status().isBadRequest())
-                                .andExpect(jsonPath("$.message").value("Customer ID must be a valid number"));
+                                .andExpect(jsonPath("$.message").value("ID must be a valid number"));
 
                 verifyNoInteractions(customerService);
         }
@@ -395,7 +395,6 @@ class CustomerControllerTest {
                 .phone("+1234567890")
                 .address("123 Main St")
                 .dateOfBirth(LocalDate.of(1990, 1, 1))
-                .nationalId("1234567890")
                 .createdAt(LocalDateTime.of(2026, 1, 1, 12, 0))
                 .build();
     }

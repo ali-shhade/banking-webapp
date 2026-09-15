@@ -82,12 +82,16 @@ public class AccountServiceImpl implements AccountService {
             throw new IllegalArgumentException("Account ID must not be null");
         }
 
-        Account account = accountRepository.findById(accountId)
+        Account account = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new AccountNotFoundException("Account not found"));
         ensureOwner(account, authenticatedEmail);
 
         if (account.getStatus() == AccountStatus.CLOSED) {
             throw new IllegalStateException("Account is already closed");
+        }
+
+        if (account.getBalance() != null && account.getBalance().compareTo(BigDecimal.ZERO) != 0) {
+            throw new IllegalArgumentException("Account balance must be zero before closing");
         }
 
         account.setStatus(AccountStatus.CLOSED);
@@ -101,7 +105,7 @@ public class AccountServiceImpl implements AccountService {
             throw new IllegalArgumentException("Account ID must not be null");
         }
 
-        Account account = accountRepository.findById(accountId)
+        Account account = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new AccountNotFoundException("Account not found"));
         ensureOwner(account, authenticatedEmail);
 
@@ -123,7 +127,7 @@ public class AccountServiceImpl implements AccountService {
             throw new IllegalArgumentException("Account ID must not be null");
         }
 
-        Account account = accountRepository.findById(accountId)
+        Account account = accountRepository.findByIdForUpdate(accountId)
                 .orElseThrow(() -> new AccountNotFoundException("Account not found"));
         ensureOwner(account, authenticatedEmail);
 

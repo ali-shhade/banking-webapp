@@ -20,6 +20,5 @@ public class CustomerResponse {
     private String phone;
     private String address;
     private LocalDate dateOfBirth;
-    private String nationalId;
     private LocalDateTime createdAt;
 }

@@ -22,5 +22,6 @@ public class TransactionResponse {
     private BigDecimal balanceAfter;
     private String description;
     private String reference;
+    private String transferReference;
     private LocalDateTime createdAt;
 }
