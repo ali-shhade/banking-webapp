@@ -78,13 +78,35 @@ connection through `@DynamicPropertySource`, overriding the normal datasource
 configuration.
 
 All full-context tests share the container for that test JVM. The existing test
-profile configures Hibernate's schema creation and removal, and the tests manage
-their test records. Testcontainers' resource reaper cleans up its containers
+profile configures Hibernate's schema creation and removal. Before each test,
+`BaseIntegrationTest` uses `JdbcTemplate` to delete transactions, then accounts,
+then customers. This order respects foreign keys and removes records left by
+another test class. Testcontainers' resource reaper cleans up its containers
 when the JVM exits; the temporary runner is also discarded after the job.
 
 There is no separate GitHub Actions MySQL service, no production database
 connection, and no user-managed GitHub secret needed. The database credentials
 and JWT key already in the test code/configuration are only for disposable tests.
+
+### Why a build can pass locally and fail in CI
+
+Maven's default test-class order is based on the filesystem, so classes can run
+in a different order on Windows and Linux. Originally, the customer tests deleted
+only customers during setup, while account and transaction tests could leave
+related rows in the shared database. MySQL correctly rejected deleting customers
+that still had accounts; deleting accounts with transactions had the same issue.
+The shared before-each cleanup now clears all three tables in dependency order.
+It uses JDBC directly so it also works in the JWT tests, where a repository bean
+is mocked.
+
+To check that tests also work in a different class order, run:
+
+```powershell
+mvn --batch-mode --no-transfer-progress -f banking-backend/pom.xml "-Dsurefire.runOrder=reversealphabetical" test
+```
+
+This is a diagnostic check; the CI workflow continues using the normal build
+command. See [Maven's runOrder documentation](https://maven.apache.org/surefire/maven-surefire-plugin/test-mojo.html#runOrder).
 
 ## What git push origin main does
 

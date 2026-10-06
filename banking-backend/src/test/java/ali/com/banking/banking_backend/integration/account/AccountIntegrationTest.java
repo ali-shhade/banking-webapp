@@ -11,7 +11,6 @@ import ali.com.banking.banking_backend.customer.repository.CustomerRepository;
 import ali.com.banking.banking_backend.integration.BaseIntegrationTest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
@@ -51,12 +50,6 @@ class AccountIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private CustomerRepository customerRepository;
-
-    @BeforeEach
-    void cleanDatabase() {
-        accountRepository.deleteAll();
-        customerRepository.deleteAll();
-    }
 
     @ParameterizedTest
     @EnumSource(AccountType.class)

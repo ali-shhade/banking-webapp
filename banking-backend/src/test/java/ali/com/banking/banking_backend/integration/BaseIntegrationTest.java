@@ -1,6 +1,9 @@
 package ali.com.banking.banking_backend.integration;
 
+import org.junit.jupiter.api.BeforeEach;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.ActiveProfiles;
@@ -14,9 +17,21 @@ public abstract class BaseIntegrationTest {
             .withUsername("test")
             .withPassword("test");
 
-            static {
-    MYSQL_CONTAINER.start();
-}
+    static {
+        MYSQL_CONTAINER.start();
+    }
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @BeforeEach
+    protected void resetDatabase() {
+        // The shared database must be cleared from child tables to parent tables.
+        jdbcTemplate.update("DELETE FROM transactions");
+        jdbcTemplate.update("DELETE FROM accounts");
+        jdbcTemplate.update("DELETE FROM customers");
+    }
+
     @DynamicPropertySource
     static void registerContainerProperties(DynamicPropertyRegistry registry) {
         registry.add("spring.datasource.url", MYSQL_CONTAINER::getJdbcUrl);

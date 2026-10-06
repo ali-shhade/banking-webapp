@@ -18,7 +18,6 @@ import ali.com.banking.banking_backend.transaction.repository.TransactionReposit
 import ali.com.banking.banking_backend.transaction.service.TransactionService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -76,13 +75,6 @@ class TransactionIntegrationTest extends BaseIntegrationTest {
 
     @Autowired
     private CustomerRepository customerRepository;
-
-    @BeforeEach
-    void cleanDatabase() {
-        transactionRepository.deleteAll();
-        accountRepository.deleteAll();
-        customerRepository.deleteAll();
-    }
 
     @Test
     void deposit_increasesBalanceAndPersistsTransaction() throws Exception {
